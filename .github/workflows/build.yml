@@ -4,14 +4,14 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    name: DevkitPPC build (official v2.1 + Wiired changes)
+    name: DevkitPPC build (official v2.1 + Wiired bridge)
     runs-on: ubuntu-latest
     container:
       # Pinned to an older toolchain snapshot; RVLoader predates newer libogc changes
       image: devkitpro/devkitppc:20240504
 
     steps:
-    # This fork: provides the modified files
+    # This fork: provides the wiired-overlay folder
     - name: Checkout fork (Wiired changes)
       uses: actions/checkout@v4
       with:
@@ -25,18 +25,11 @@ jobs:
         ref: v2.1
         path: src
 
+    # Every file in wiired-overlay replaces (or adds) the file at the same path
     - name: Apply Wiired changes to v2.1
       run: |
-        for f in \
-          main/source/luasupport/luasyslib.cpp \
-          main/source/gui/guigamesview.cpp \
-          driveRoot/rvloader/themes/main/scripts/topbar.lua \
-          driveRoot/rvloader/themes/main/scripts/loaderSettings.lua \
-          driveRoot/rvloader/themes/main/scripts/settings.lua
-        do
-          echo "Applying $f"
-          cp -f "wiired/$f" "src/$f"
-        done
+        test -d wiired/wiired-overlay || (echo "ERROR: wiired-overlay folder missing from the fork" && exit 1)
+        cp -rv wiired/wiired-overlay/. src/
 
     - name: Make
       working-directory: src
@@ -48,7 +41,7 @@ jobs:
       working-directory: src
       run: |
         ls -l driveRoot/apps/RVLoader/
-        grep -q getHomeTarget driveRoot/apps/RVLoader/boot.dol && echo "boot.dol contains the Wiired changes" || (echo "ERROR: boot.dol was not rebuilt" && exit 1)
+        grep -q launchWiired driveRoot/apps/RVLoader/boot.dol && echo "boot.dol contains the Wiired bridge" || (echo "ERROR: boot.dol was not rebuilt" && exit 1)
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
