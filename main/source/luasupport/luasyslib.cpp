@@ -1,6 +1,13 @@
 #include <gccore.h>
+#include <stdio.h>
 #include <lua.hpp>
 #include "system.h"
+#include "main.h"
+
+//Config key storing which menu the Home icon on the C-stick wheel boots
+//0 = stock Wii Menu, 1 = custom home menu (Wiired)
+#define HOME_TARGET_KEY     "HomeTarget"
+#define HOME_TARGET_DEFAULT 0
 
 static int lua_Sys_debug(lua_State* L) {
     int argc = lua_gettop(L);
@@ -48,6 +55,62 @@ static int lua_Sys_bootInstaller(lua_State* L) {
     return 0;
 }
 
+// Sys.bootDOL(path [, patchMX])
+// Boots a DOL from the mounted drive (e.g. "/apps/wiired/boot.dol").
+// Returns false if the file can't be opened; on success it never returns.
+static int lua_Sys_bootDOL(lua_State* L) {
+    int argc = lua_gettop(L);
+    if (argc < 1 || argc > 2) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+
+    const char* path = luaL_checkstring(L, 1);
+    bool patchMX = (argc == 2) ? lua_toboolean(L, 2) : false;
+
+    //Check the file exists first so the caller can fall back to something else
+    FILE* fp = fopen(path, "rb");
+    if (!fp) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    fclose(fp);
+
+    bootDOL(path, "", patchMX);
+
+    //Only reached if bootDOL failed
+    lua_pushboolean(L, false);
+    return 1;
+}
+
+// Sys.getHomeTarget() -> 0 = Wii Menu, 1 = custom home menu
+static int lua_Sys_getHomeTarget(lua_State* L) {
+    int argc = lua_gettop(L);
+    if (argc != 0) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+
+    int target;
+    if (!mainConfig.getValue(HOME_TARGET_KEY, &target))
+        target = HOME_TARGET_DEFAULT;
+
+    lua_pushinteger(L, target);
+
+    return 1;
+}
+
+// Sys.setHomeTarget(target) - saves the choice to /rvloader/config.cfg
+static int lua_Sys_setHomeTarget(lua_State* L) {
+    int argc = lua_gettop(L);
+    if (argc != 1) {
+        return luaL_error(L, "wrong number of arguments");
+    }
+
+    mainConfig.setValue(HOME_TARGET_KEY, (int)luaL_checkinteger(L, 1));
+    mainConfig.save(MAINCONFIG_PATH);
+
+    return 0;
+}
+
 static int lua_Sys_reboot(lua_State* L) {
     int argc = lua_gettop(L);
     if (argc != 0) {
@@ -75,6 +138,9 @@ static const luaL_Reg Sys_functions[] = {
     {"bootSysMenu", lua_Sys_bootSysMenu},
     {"bootPriiloader", lua_Sys_bootPriiloader},
     {"bootInstaller", lua_Sys_bootInstaller},
+    {"bootDOL", lua_Sys_bootDOL},
+    {"getHomeTarget", lua_Sys_getHomeTarget},
+    {"setHomeTarget", lua_Sys_setHomeTarget},
     {"reboot", lua_Sys_reboot},
     {"getVersion", lua_Sys_getVersion},
     {NULL, NULL}

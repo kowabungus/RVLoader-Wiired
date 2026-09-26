@@ -9,7 +9,7 @@ loaderSettings = class(SettingsMenu)
 function loaderSettings:init(font, lineHeight, columnWidth, sideMargin)
     SettingsMenu.init(self, font, lineHeight, columnWidth, sideMargin)
 
-    self.selectionEmu = enum({"selTheme", "selBackground", "selLoad", "saveConfig", "bootPriiloader", "runInstaller"})
+    self.selectionEmu = enum({"selTheme", "selBackground", "selLoad", "selHome", "saveConfig", "bootPriiloader", "runInstaller"})
     self.selected = self.selectionEmu[1]
 
     self.availThemes = Theme.getThemes()
@@ -22,6 +22,14 @@ function loaderSettings:init(font, lineHeight, columnWidth, sideMargin)
 
     self.wiiLoadScreen = Theme.getWiiLoadingScreen()
     self.curWiiLoadScreen = self.wiiLoadScreen
+
+    --Home icon target on the C-stick wheel: 0 = Wii Menu, 1 = Wiired
+    self.homeTargetNames = {[0] = "Wii Menu", [1] = "Wiired Menu"}
+    self.homeTarget = Sys.getHomeTarget()
+    if self.homeTargetNames[self.homeTarget] == nil then
+        self.homeTarget = 0
+    end
+    self.curHomeTarget = self.homeTarget
 
     for i = 1, #self.availThemes do
         Sys.debug("Theme: " .. self.availThemes[i] .. "\n")
@@ -62,6 +70,8 @@ function loaderSettings:draw(onFocus)
     elseif self.curWiiLoadScreen == 1 then
         self.menuSystem:printLineValue("Spinning Disc", self.curWiiLoadScreen ~= self.wiiLoadScreen)
     end
+    self.menuSystem:printLine("Home menu", self.selected.id)
+    self.menuSystem:printLineValue(self.homeTargetNames[self.curHomeTarget], self.curHomeTarget ~= self.homeTarget)
     self.menuSystem:printLine("Save config", self.selected.id)
     self.menuSystem:printLine("Boot priiloader", self.selected.id)
     self.menuSystem:printLine("Run installer", self.selected.id)
@@ -93,6 +103,8 @@ function loaderSettings:handleInputs(onFocus)
             elseif self.curWiiLoadScreen == 1 then
                 self.curWiiLoadScreen = 0
             end
+        elseif self.selected == self.selectionEmu.selHome then
+            self.curHomeTarget = 1 - self.curHomeTarget
         elseif self.selected == self.selectionEmu.saveConfig then
             local hasToReboot = false
             if self.availThemes[self.curThemeId] ~= self.curTheme then
@@ -109,6 +121,10 @@ function loaderSettings:handleInputs(onFocus)
             if self.curWiiLoadScreen ~= self.wiiLoadScreen then
                 Theme.setWiiLoadingScreen(self.curWiiLoadScreen)
                 self.wiiLoadScreen = self.curWiiLoadScreen
+            end
+            if self.curHomeTarget ~= self.homeTarget then
+                Sys.setHomeTarget(self.curHomeTarget)
+                self.homeTarget = self.curHomeTarget
             end
             if hasToReboot then
                 Sys.reboot()
@@ -135,6 +151,8 @@ function loaderSettings:handleInputs(onFocus)
             elseif self.curWiiLoadScreen == 1 then
                 self.curWiiLoadScreen = 0
             end
+        elseif self.selected == self.selectionEmu.selHome then
+            self.curHomeTarget = 1 - self.curHomeTarget
         end
     elseif down.BUTTON_LEFT then
         if self.selected == self.selectionEmu.selTheme then
@@ -153,6 +171,8 @@ function loaderSettings:handleInputs(onFocus)
             elseif self.curWiiLoadScreen == 1 then
                 self.curWiiLoadScreen = 0
             end
+        elseif self.selected == self.selectionEmu.selHome then
+            self.curHomeTarget = 1 - self.curHomeTarget
         end
     end
 

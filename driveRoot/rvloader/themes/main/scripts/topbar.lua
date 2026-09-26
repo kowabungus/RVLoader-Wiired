@@ -1,6 +1,9 @@
 dofile("scripts/enum.lua")
 dofile("scripts/topbarcmd.lua")
 
+-- DOL launched by the Home icon on the C-stick wheel (path relative to the drive root)
+CUSTOM_HOME_MENU_PATH = "/apps/wiired/boot.dol"
+
 function myAtan2(y, x) --This always returns an angle in [0; 2pi)
     local angle = math.atan(y, x) + 2 * math.pi
     return angle % (2 * math.pi)
@@ -185,6 +188,12 @@ function handleInputs(onFocus)
         elseif curSelection == 1 then
             Gui.switchToElement("GCGamesView")
         elseif curSelection == 2 then
+            -- Home icon: target is chosen in Settings > Loader
+            -- (0 = stock Wii Menu, 1 = custom home menu on the USB drive).
+            -- If the custom menu is missing, fall back to the stock Wii Menu.
+            if Sys.getHomeTarget() == 1 then
+                Sys.bootDOL(CUSTOM_HOME_MENU_PATH)
+            end
             Sys.bootSysMenu()
         elseif curSelection == 3 then
             Gui.switchToElement("SettingsView")
