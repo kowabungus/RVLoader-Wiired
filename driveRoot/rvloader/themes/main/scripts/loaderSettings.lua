@@ -25,7 +25,14 @@ function loaderSettings:init(font, lineHeight, columnWidth, sideMargin)
 
     --Home icon target on the C-stick wheel: 0 = Wii Menu, 1 = Wiired
     self.homeTargetNames = {[0] = "Wii Menu", [1] = "Wiired Menu"}
-    self.homeTarget = Sys.getHomeTarget()
+    --Needs a boot.dol built with Sys.getHomeTarget/setHomeTarget; if the running
+    --boot.dol is older, show a notice instead of crashing the settings screen
+    self.homeTargetAvailable = (Sys.getHomeTarget ~= nil and Sys.setHomeTarget ~= nil)
+    if self.homeTargetAvailable then
+        self.homeTarget = Sys.getHomeTarget()
+    else
+        self.homeTarget = 0
+    end
     if self.homeTargetNames[self.homeTarget] == nil then
         self.homeTarget = 0
     end
@@ -71,7 +78,11 @@ function loaderSettings:draw(onFocus)
         self.menuSystem:printLineValue("Spinning Disc", self.curWiiLoadScreen ~= self.wiiLoadScreen)
     end
     self.menuSystem:printLine("Home menu", self.selected.id)
-    self.menuSystem:printLineValue(self.homeTargetNames[self.curHomeTarget], self.curHomeTarget ~= self.homeTarget)
+    if self.homeTargetAvailable then
+        self.menuSystem:printLineValue(self.homeTargetNames[self.curHomeTarget], self.curHomeTarget ~= self.homeTarget)
+    else
+        self.menuSystem:printLineValue("Needs updated boot.dol", false)
+    end
     self.menuSystem:printLine("Save config", self.selected.id)
     self.menuSystem:printLine("Boot priiloader", self.selected.id)
     self.menuSystem:printLine("Run installer", self.selected.id)
@@ -104,7 +115,9 @@ function loaderSettings:handleInputs(onFocus)
                 self.curWiiLoadScreen = 0
             end
         elseif self.selected == self.selectionEmu.selHome then
-            self.curHomeTarget = 1 - self.curHomeTarget
+            if self.homeTargetAvailable then
+                self.curHomeTarget = 1 - self.curHomeTarget
+            end
         elseif self.selected == self.selectionEmu.saveConfig then
             local hasToReboot = false
             if self.availThemes[self.curThemeId] ~= self.curTheme then
@@ -122,7 +135,7 @@ function loaderSettings:handleInputs(onFocus)
                 Theme.setWiiLoadingScreen(self.curWiiLoadScreen)
                 self.wiiLoadScreen = self.curWiiLoadScreen
             end
-            if self.curHomeTarget ~= self.homeTarget then
+            if self.homeTargetAvailable and self.curHomeTarget ~= self.homeTarget then
                 Sys.setHomeTarget(self.curHomeTarget)
                 self.homeTarget = self.curHomeTarget
             end
@@ -152,7 +165,9 @@ function loaderSettings:handleInputs(onFocus)
                 self.curWiiLoadScreen = 0
             end
         elseif self.selected == self.selectionEmu.selHome then
-            self.curHomeTarget = 1 - self.curHomeTarget
+            if self.homeTargetAvailable then
+                self.curHomeTarget = 1 - self.curHomeTarget
+            end
         end
     elseif down.BUTTON_LEFT then
         if self.selected == self.selectionEmu.selTheme then
@@ -172,7 +187,9 @@ function loaderSettings:handleInputs(onFocus)
                 self.curWiiLoadScreen = 0
             end
         elseif self.selected == self.selectionEmu.selHome then
-            self.curHomeTarget = 1 - self.curHomeTarget
+            if self.homeTargetAvailable then
+                self.curHomeTarget = 1 - self.curHomeTarget
+            end
         end
     end
 

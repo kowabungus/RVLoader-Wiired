@@ -191,7 +191,7 @@ function handleInputs(onFocus)
             -- Home icon: target is chosen in Settings > Loader
             -- (0 = stock Wii Menu, 1 = custom home menu on the USB drive).
             -- If the custom menu is missing, fall back to the stock Wii Menu.
-            if Sys.getHomeTarget() == 1 then
+            if Sys.getHomeTarget and Sys.bootDOL and Sys.getHomeTarget() == 1 then
                 Sys.bootDOL(CUSTOM_HOME_MENU_PATH)
             end
             Sys.bootSysMenu()
