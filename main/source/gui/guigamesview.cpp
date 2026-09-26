@@ -551,7 +551,9 @@ int GuiGamesView::lua_drawGameSaveIcon(lua_State* L) {
 
         try {
             GameContainer& gc = gamesList->at(idx);
-            gc.save.drawIcon(coordinates);
+            // Disabled: unfinished upstream feature (GameContainer has no "save" member)
+            // gc.save.drawIcon(coordinates);
+            (void)gc;
         } catch (std::out_of_range& e) {
 
         }
